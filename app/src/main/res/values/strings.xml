@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">Cuatro en linea</string>
+    <string name="action_settings">Settings</string>
+    <string name="title_activity_game">Playing!</string>
+    <string name="player1">Player1</string>
+    <string name="rows">Rows</string>
+    <string name="player2">Player2</string>
+    <string name="cols">Cols</string>
+    <string name="play">Play!</string>
+    <string name="undo">UNDO!</string>
+    <string name="concede">Concede</string>
+    <string name="no_more_mistakes">No more mistakes were made!</string>
+    <string name="full_column">Full column! Choose another</string>
+    <string name="play_again">Play again!</string>
+    <string name="draw">Draw!</string>
+</resources>
