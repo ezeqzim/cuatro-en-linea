@@ -1,10 +1,11 @@
-package com.example.ezeqzim.cuatro_en_linea;
+package com.example.ezeqzim.cuatro_en_linea.Activities;
 
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.EditText;
+import com.example.ezeqzim.cuatro_en_linea.R;
 
 import java.util.ArrayList;
 
@@ -26,13 +27,13 @@ public class MainActivity extends AppCompatActivity {
         try {
             rows = Integer.parseInt(s_rows);
         }
-        catch (Exception e){
+        catch (Exception e) {
             rows = 7;
         }
         try {
             cols = Integer.parseInt(s_cols);
         }
-        catch (Exception e){
+        catch (Exception e) {
             cols = 7;
         }
 

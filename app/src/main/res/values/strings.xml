@@ -8,7 +8,6 @@
     <string name="cols">Cols</string>
     <string name="play">Play!</string>
     <string name="undo">UNDO!</string>
-    <string name="concede">Concede</string>
     <string name="no_more_mistakes">No more mistakes were made!</string>
     <string name="full_column">Full column! Choose another</string>
     <string name="play_again">Play again!</string>
