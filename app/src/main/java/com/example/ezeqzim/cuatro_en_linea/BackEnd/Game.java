@@ -25,24 +25,17 @@ public class Game {
         return board.getRows();
     }
 
-    public int getActivePlayerPlayIndex(){
-        return active_player_index;
-    }
 
-    public int getLastPlayerPlayIndex(){
-        return (active_player_index - 1) % players.size();
-    }
-
-    public void passTurn() {
-        active_player_index = (active_player_index + 1) % players.size();
+    private void passTurn() {
+        active_player_index = (active_player_index + 1 + players.size()) % players.size();
     }
 
     private void retreatTurn() {
-        active_player_index = (active_player_index - 1) % players.size();
+        active_player_index = (active_player_index - 1 + players.size()) % players.size();
     }
 
-    public PlayerStatistic getActivePlayerStatistic() {
-        return players.get(active_player_index);
+    public PlayerStatistic getPlayerStatistic(int player_index) {
+        return players.get(player_index);
     }
 
     public List<PlayerStatistic> getPlayersStatistic() {
@@ -54,12 +47,12 @@ public class Game {
         moves = new Stack<>();
     }
 
-    public WinStatus winner() {
-        WinStatus status = board.win(active_player_index);
+    public WinStatus winner(int player_index) {
+        WinStatus status = board.win(player_index);
         if (status == WinStatus.WIN) {
-            PlayerStatistic player = getActivePlayerStatistic();
+            PlayerStatistic player = getPlayerStatistic(player_index);
             player.addWin();
-            players.set(active_player_index, player);
+            players.set(player_index, player);
         }
         return status;
     }
@@ -77,6 +70,7 @@ public class Game {
                 res.add(moves.peek());
             moves.push(actual_move);
         }
+        passTurn();
         return res;
     }
 
@@ -88,7 +82,8 @@ public class Game {
         board.clearPosition(last_move.getRow(), last_move.getCol());
         retreatTurn();
         res.add(last_move);
-        res.add(moves.peek());
+        if (!moves.isEmpty())
+            res.add(moves.peek());
         return res;
     }
 }

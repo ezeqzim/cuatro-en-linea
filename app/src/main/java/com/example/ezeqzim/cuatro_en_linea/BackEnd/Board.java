@@ -42,6 +42,7 @@ class Board {
     }
 
     WinStatus win(int player_id) {
+        win_cells = new ArrayList<>();
         for (int row = rows - 1; row >= 0; row--)
             for (int col = 0; col < cols - 3; col++)
                 if ((board[row][col].getContent().equals(player_id)) && (board[row][col + 1].getContent().equals(player_id)) && (board[row][col + 2].getContent().equals(player_id)) && (board[row][col + 3].getContent().equals(player_id))) {
