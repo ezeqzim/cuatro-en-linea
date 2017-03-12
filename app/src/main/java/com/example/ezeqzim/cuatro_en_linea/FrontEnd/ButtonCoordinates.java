@@ -14,10 +14,6 @@ public class ButtonCoordinates extends Button {
         this.size = size;
     }
 
-    public int getRow() {
-        return row;
-    }
-
     public int getCol() {
         return col;
     }

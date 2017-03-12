@@ -1,4 +1,4 @@
-package com.example.ezeqzim.cuatro_en_linea.BackEnd;
+package com.example.ezeqzim.cuatro_en_linea.BackEnd.Game;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,6 +39,25 @@ class Board {
 
     int getRows() {
         return rows;
+    }
+
+    Boolean setPosition(int col, int player_id) {
+        int row = rows - 1;
+        while (row >= 0 && !board[row][col].getContent().equals(BLANK))
+            row--;
+        if (row < 0)
+            return false;
+        board[row][col].setContent(player_id);
+        last_settled_cell = new Cell(board[row][col]);
+        return true;
+    }
+
+    List<Cell> getWinCells(){
+        return win_cells;
+    }
+
+    Cell getLastSettledCell(){
+        return last_settled_cell;
     }
 
     WinStatus win(int player_id) {
@@ -83,24 +102,5 @@ class Board {
             if (board[0][col].getContent().equals(BLANK))
                 return WinStatus.NONE;
         return WinStatus.DRAW;
-    }
-
-    List<Cell> getWinCells(){
-        return win_cells;
-    }
-
-    Cell getLastSettledCell(){
-        return last_settled_cell;
-    }
-
-    Boolean setPosition(int col, int player_id) {
-        int row = rows - 1;
-        while (row >= 0 && !board[row][col].getContent().equals(BLANK))
-            row--;
-        if (row < 0)
-            return false;
-        board[row][col].setContent(player_id);
-        last_settled_cell = new Cell(board[row][col]);
-        return true;
     }
 }

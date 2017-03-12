@@ -10,59 +10,48 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.example.ezeqzim.cuatro_en_linea.BackEnd.*;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Cell;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Game;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.WinStatus;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Player.*;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Statistics.*;
 import com.example.ezeqzim.cuatro_en_linea.FrontEnd.*;
 import com.example.ezeqzim.cuatro_en_linea.R;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class GameActivity extends AppCompatActivity {
     private Game game;
+    private Player activePlayer;
     private int[][] SHAPES;
-    private final static int MARGIN = 1;
-    private int BTN_MAX, active_player_index, players_count;
-    private boolean ended;
     private LinearLayout BOARD;
+    private final static int MARGIN = 1;
+    private int BTN_MAX;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Intent play = getIntent();
         setContentView(R.layout.activity_game);
+        Intent play = getIntent();
         initialize(play);
     }
 
     private void initialize(Intent play) {
-        ArrayList<String> players = play.getStringArrayListExtra("players");
-        game = new Game(
-                play.getIntExtra("rows", 7),
-                play.getIntExtra("cols", 7),
-                players
-        );
+        game = new Game(play.getIntExtra("rows", 7), play.getIntExtra("cols", 7), play.getStringArrayListExtra("players"));
         SHAPES = (int[][]) play.getBundleExtra("shapes").getSerializable("shapes");
         BTN_MAX = getWidthMax();
+        activePlayer = game.getActivePlayer();
         setTurnTextView();
         setResultTextView();
         getAndSetBoard();
-        active_player_index = 0;
-        players_count = players.size();
     }
 
     private int getWidthMax() {
         Point size = new Point();
         getWindowManager().getDefaultDisplay().getSize(size);
         return size.x / (game.getCols() + 1);
-    }
-
-    private void setTurnTextView() {
-        TextView tv = (TextView) findViewById(R.id.isPlaying);
-        tv.setText(whosePlayingString());
-    }
-
-    private void setResultTextView() {
-        TextView tv = (TextView) findViewById(R.id.resultsView);
-        tv.setText(resultsString());
     }
 
     private void getAndSetBoard() {
@@ -75,8 +64,6 @@ public class GameActivity extends AppCompatActivity {
         BOARD.removeAllViews();
         for (int row = 0; row < game.getRows(); ++row)
             addLinearLayoutWithButtons(row);
-        game.restart();
-        ended = false;
     }
 
     private void addLinearLayoutWithButtons(int row) {
@@ -91,13 +78,13 @@ public class GameActivity extends AppCompatActivity {
         BOARD.addView(LL);
     }
 
-    private ButtonCoordinates createButton(int r, int c) {
-        ButtonCoordinates btn = new ButtonCoordinates(this, r, c, BTN_MAX);
+    private ButtonCoordinates createButton(int row, int col) {
+        ButtonCoordinates btn = new ButtonCoordinates(this, row, col, BTN_MAX);
         btn.setLayoutParams(MARGIN);
         btn.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View v) {
-                ButtonCoordinates btn = (ButtonCoordinates) v;
+            public void onClick(View view) {
+                ButtonCoordinates btn = (ButtonCoordinates) view;
                 makePlay(btn.getCol());
             }
         });
@@ -105,40 +92,25 @@ public class GameActivity extends AppCompatActivity {
         return btn;
     }
 
-    private int getLastPlayerPlayIndex(){
-        return (active_player_index - 1 + players_count) % players_count;
-    }
-
-    private void passTurn() {
-        active_player_index = (active_player_index + 1 + players_count) % players_count;
-    }
-
-    private void retreatTurn() {
-        active_player_index = getLastPlayerPlayIndex();
-    }
-
     private void makePlay(int col) {
-        if (!ended) {
+        if (!game.isEnded()) {
             List<Cell> play = game.makePlay(col);
+            WinStatus status = game.getWinStatus();
             if (play.size() == 0)
                 Toast.makeText(this, R.string.full_column, Toast.LENGTH_SHORT).show();
             else {
-                if (play.size() == 2)
-                    ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(play.get(1).getRow())).getChildAt(play.get(1).getCol())).setBackground(SHAPES[getLastPlayerPlayIndex()][1]);
-                ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(play.get(0).getRow())).getChildAt(play.get(0).getCol())).setBackground(SHAPES[active_player_index][0]);
-
-                WinStatus status = game.winner(active_player_index);
-                if (status == WinStatus.DRAW) {
+//                // GET SHAPES FROM PLAYER
+//                if (play.size() == 2)
+//                    ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(play.get(1).getRow())).getChildAt(play.get(1).getCol())).setBackground(SHAPES[game.getLastPlayerPlayIndex()][1]);
+//                ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(play.get(0).getRow())).getChildAt(play.get(0).getCol())).setBackground(SHAPES[game.activePlayerIndex][0]);
+                if (status == WinStatus.DRAW)
                     Toast.makeText(this, R.string.draw, Toast.LENGTH_SHORT).show();
-                    ended = true;
-                }
                 else if (status == WinStatus.WIN) {
                     markWin();
                     Toast.makeText(this, whoseWinString(), Toast.LENGTH_SHORT).show();
                     setResultTextView();
-                    ended = true;
                 }
-                passTurn();
+                activePlayer = game.getActivePlayer();
                 setTurnTextView();
             }
         }
@@ -146,52 +118,66 @@ public class GameActivity extends AppCompatActivity {
 
     private void markWin() {
         List<Cell> places = game.getWinCells();
-        for (Cell place : places)
-            ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(place.getRow())).getChildAt(place.getCol())).setBackground(SHAPES[active_player_index][0]);
+//        GET SHAPES FROM PLAYER
+//        for (Cell place : places)
+//            ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(place.getRow())).getChildAt(place.getCol())).setBackground(SHAPES[activePlayerIndex][0]);
     }
 
     public void restart(View view) {
-        if (ended) {
+        if (game.isEnded()) {
             setTurnTextView();
             setResultTextView();
             initializeBoard();
+            game.restart();
         }
     }
 
     public void undoLastMove(View view) {
-        if (!ended) {
+        if (!game.isEnded()) {
             List<Cell> undo = game.undoLastMove();
+            activePlayer = game.getActivePlayer();
             if (undo.size() == 0)
                 Toast.makeText(this, R.string.no_more_mistakes, Toast.LENGTH_SHORT).show();
             else {
                 ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(undo.get(0).getRow())).getChildAt(undo.get(0).getCol())).setBackground(R.drawable.button_black_border);
-                if (undo.size() == 2)
-                    ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(undo.get(1).getRow())).getChildAt(undo.get(1).getCol())).setBackground(SHAPES[active_player_index][0]);
+//                GET SHAPES FROM PLAYER
+//                if (undo.size() == 2)
+//                    ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(undo.get(1).getRow())).getChildAt(undo.get(1).getCol())).setBackground(SHAPES[activePlayerIndex][0]);
                 setTurnTextView();
             }
-            retreatTurn();
         }
     }
 
     private String resultsString() {
-        List<PlayerStatistic> playersStatistics = game.getPlayersStatistic();
+        List<Player> players = game.getPlayers();
         String s = "";
-        for (int i = 0; i < playersStatistics.size(); ++i){
-            PlayerStatistic player_stat = playersStatistics.get(i);
-            s += (i == 0 ? "" : " ") + player_stat.getPlayer().getName() + ": " + player_stat.getWins();
+        for (int i = 0; i < players.size(); ++i){
+            Player player = players.get(i);
+            Map<String, Statistic> stats = player.getPlayerStatistics().getStatistics();
+            s += (i == 0 ? "" : " ") + player.getName() + ": " + stats.get("wins").getValue();
         }
         return s;
     }
 
-    private String playerNamePlusString(int player_index, String text){
-        return game.getPlayerStatistic(player_index).getPlayer().getName() + " " + text;
+    private void setTurnTextView() {
+        TextView tv = (TextView) findViewById(R.id.isPlaying);
+        tv.setText(whosePlayingString());
+    }
+
+    private void setResultTextView() {
+        TextView tv = (TextView) findViewById(R.id.resultsView);
+        tv.setText(resultsString());
+    }
+
+    private String playerNamePlusString(Player player, String text){
+        return player.getName() + " " + text;
     }
 
     private String whosePlayingString(){
-        return playerNamePlusString(active_player_index, "is playing");
+        return playerNamePlusString(activePlayer, "is playing");
     }
 
     private String whoseWinString(){
-        return playerNamePlusString(active_player_index, "wins");
+        return playerNamePlusString(activePlayer, "wins");
     }
 }

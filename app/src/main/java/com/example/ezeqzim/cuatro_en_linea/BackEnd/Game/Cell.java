@@ -1,4 +1,4 @@
-package com.example.ezeqzim.cuatro_en_linea.BackEnd;
+package com.example.ezeqzim.cuatro_en_linea.BackEnd.Game;
 
 public class Cell {
     private int row, col;
