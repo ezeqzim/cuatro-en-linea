@@ -3,7 +3,7 @@
     <item>
         <color android:color="#AAAAAA"/>
     </item>
-    <item>
+    <item android:id="@+id/circle_red_border">
         <shape android:shape="oval">
             <stroke android:color="#0000FF"
                     android:width="3dp"/>

@@ -3,6 +3,8 @@ package com.example.ezeqzim.cuatro_en_linea.Activities;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
@@ -15,20 +17,23 @@ import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Game;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.WinStatus;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Player.*;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Statistics.*;
-import com.example.ezeqzim.cuatro_en_linea.FrontEnd.*;
+import com.example.ezeqzim.cuatro_en_linea.FrontEnd.Buttons.ButtonCoordinates;
 import com.example.ezeqzim.cuatro_en_linea.R;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 public class GameActivity extends AppCompatActivity {
     private Game game;
     private Player activePlayer;
-    private int[][] SHAPES;
     private LinearLayout BOARD;
     private final static int MARGIN = 1;
     private int BTN_MAX;
+    private final int btn_circle_red_border = R.drawable.button_circle_red_border;
+    private final int btn_circle_black_border = R.drawable.button_circle_black_border;
+    private final int btn_black_border = R.drawable.button_black_border;
+    private final int layer_circle_red_border = R.id.circle_red_border;
+    private final int layer_circle_black_border = R.id.circle_black_border;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -38,9 +43,14 @@ public class GameActivity extends AppCompatActivity {
         initialize(play);
     }
 
+    @SuppressWarnings("unchecked")
     private void initialize(Intent play) {
-        game = new Game(play.getIntExtra("rows", 7), play.getIntExtra("cols", 7), play.getStringArrayListExtra("players"));
-        SHAPES = (int[][]) play.getBundleExtra("shapes").getSerializable("shapes");
+        game = new Game(
+                play.getIntExtra("rows", 7),
+                play.getIntExtra("cols", 7),
+                (List<PlayerProfile>) play.getBundleExtra("bundle").getSerializable("playerProfiles"),
+                (int[]) play.getBundleExtra("bundle").getSerializable("colors")
+        );
         BTN_MAX = getWidthMax();
         activePlayer = game.getActivePlayer();
         setTurnTextView();
@@ -88,7 +98,7 @@ public class GameActivity extends AppCompatActivity {
                 makePlay(btn.getCol());
             }
         });
-        btn.setBackground(R.drawable.button_black_border);
+        btn.setBackground(btn_black_border);
         return btn;
     }
 
@@ -99,10 +109,12 @@ public class GameActivity extends AppCompatActivity {
             if (play.size() == 0)
                 Toast.makeText(this, R.string.full_column, Toast.LENGTH_SHORT).show();
             else {
-//                // GET SHAPES FROM PLAYER
-//                if (play.size() == 2)
-//                    ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(play.get(1).getRow())).getChildAt(play.get(1).getCol())).setBackground(SHAPES[game.getLastPlayerPlayIndex()][1]);
-//                ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(play.get(0).getRow())).getChildAt(play.get(0).getCol())).setBackground(SHAPES[game.activePlayerIndex][0]);
+                if (play.size() == 2) {
+                    setShapeStrokeColor(btn_circle_black_border, layer_circle_black_border, game.getLastTurnPlayer().getColor());
+                    getButtonCoordinates(play.get(1).getRow(), play.get(1).getCol()).setBackground(btn_circle_black_border);
+                }
+                setShapeStrokeColor(btn_circle_red_border, layer_circle_red_border, game.getActivePlayer().getColor());
+                getButtonCoordinates(play.get(0).getRow(), play.get(0).getCol()).setBackground(btn_circle_red_border);
                 if (status == WinStatus.DRAW)
                     Toast.makeText(this, R.string.draw, Toast.LENGTH_SHORT).show();
                 else if (status == WinStatus.WIN) {
@@ -118,9 +130,11 @@ public class GameActivity extends AppCompatActivity {
 
     private void markWin() {
         List<Cell> places = game.getWinCells();
-//        GET SHAPES FROM PLAYER
-//        for (Cell place : places)
-//            ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(place.getRow())).getChildAt(place.getCol())).setBackground(SHAPES[activePlayerIndex][0]);
+        for (Cell place : places) {
+            //TODO: Check player to highlight
+            setShapeStrokeColor(btn_circle_red_border, layer_circle_red_border, game.getLastTurnPlayer().getColor());
+            getButtonCoordinates(place.getRow(), place.getCol()).setBackground(btn_circle_red_border);
+        }
     }
 
     public void restart(View view) {
@@ -139,10 +153,11 @@ public class GameActivity extends AppCompatActivity {
             if (undo.size() == 0)
                 Toast.makeText(this, R.string.no_more_mistakes, Toast.LENGTH_SHORT).show();
             else {
-                ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(undo.get(0).getRow())).getChildAt(undo.get(0).getCol())).setBackground(R.drawable.button_black_border);
-//                GET SHAPES FROM PLAYER
-//                if (undo.size() == 2)
-//                    ((ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(undo.get(1).getRow())).getChildAt(undo.get(1).getCol())).setBackground(SHAPES[activePlayerIndex][0]);
+                getButtonCoordinates(undo.get(0).getRow(), undo.get(0).getCol()).setBackground(btn_black_border);
+                if (undo.size() == 2) {
+                    setShapeStrokeColor(btn_circle_red_border, layer_circle_red_border, game.getActivePlayer().getColor());
+                    getButtonCoordinates(undo.get(1).getRow(), undo.get(1).getCol()).setBackground(btn_circle_red_border);
+                }
                 setTurnTextView();
             }
         }
@@ -154,9 +169,17 @@ public class GameActivity extends AppCompatActivity {
         for (int i = 0; i < players.size(); ++i){
             Player player = players.get(i);
             Map<String, Statistic> stats = player.getPlayerStatistics().getStatistics();
-            s += (i == 0 ? "" : " ") + player.getName() + ": " + stats.get("wins").getValue();
+            s += (i == 0 ? "" : " ") + player.getPlayerProfile().getName() + ": " + stats.get("wins").getValue();
         }
         return s;
+    }
+
+    private ButtonCoordinates getButtonCoordinates(int row, int col) {
+        return (ButtonCoordinates) ((LinearLayout) BOARD.getChildAt(row)).getChildAt(col);
+    }
+
+    private void setShapeStrokeColor(int drawable, int layerId, int color) {
+        ((GradientDrawable) ((LayerDrawable) getResources().getDrawable(drawable)).findDrawableByLayerId(layerId)).setStroke(6, color);
     }
 
     private void setTurnTextView() {
@@ -170,7 +193,7 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private String playerNamePlusString(Player player, String text){
-        return player.getName() + " " + text;
+        return player.getPlayerProfile().getName() + " " + text;
     }
 
     private String whosePlayingString(){

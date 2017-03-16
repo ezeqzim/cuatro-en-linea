@@ -1,5 +1,6 @@
 package com.example.ezeqzim.cuatro_en_linea.BackEnd.Game;
 
+import android.graphics.Color;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Player.*;
 
 import java.util.ArrayList;
@@ -14,13 +15,13 @@ public class Game {
     private Stack<Cell> moves = new Stack<>();
     private WinStatus winStatus;
 
-    public Game(int rows, int cols, ArrayList<String> names) {
+    public Game(int rows, int cols, List<PlayerProfile> playerProfiles, int[] colors) {
         this.board = new Board(rows, cols);
         this.players = new ArrayList<>();
-        for (String name : names) {
+        for (int i = 0; i < playerProfiles.size(); ++i) {
             PlayerStatistics playerStatistics = new PlayerStatistics();
             playerStatistics = new PlayerStatisticsWinDecorator(playerStatistics);
-            Player player = new Player(name, playerStatistics);
+            Player player = new Player(playerProfiles.get(i), playerStatistics, colors[i]);
             this.players.add(player);
         }
         activePlayerIndex = 0;
@@ -37,6 +38,10 @@ public class Game {
 
     public Player getActivePlayer() {
         return players.get(activePlayerIndex);
+    }
+
+    public Player getLastTurnPlayer() {
+        return players.get(getLastTurnPlayerIndex());
     }
 
     public boolean isEnded() {
@@ -69,7 +74,11 @@ public class Game {
     }
 
     private void retreatTurn() {
-        activePlayerIndex = (activePlayerIndex - 1 + players.size()) % players.size();
+        activePlayerIndex = getLastTurnPlayerIndex();
+    }
+
+    private int getLastTurnPlayerIndex() {
+        return (activePlayerIndex - 1 + players.size()) % players.size();
     }
 
     public List<Player> getPlayers() {
