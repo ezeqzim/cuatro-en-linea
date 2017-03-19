@@ -1,17 +1,13 @@
 package com.example.ezeqzim.cuatro_en_linea.BackEnd.Game;
 
-import android.graphics.Color;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Player.*;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Stack;
+import java.util.*;
 
 public class Game {
     private ArrayList<Player> players;
     private Board board;
     private int activePlayerIndex;
-    private boolean gameEnded;
     private Stack<Cell> moves = new Stack<>();
     private WinStatus winStatus;
 
@@ -45,22 +41,20 @@ public class Game {
     }
 
     public boolean isEnded() {
-        return gameEnded;
+        return winStatus != WinStatus.NONE;
     }
 
-    public List<Cell> makePlay(int col) {
-        List<Cell> res = new ArrayList<>(2);
+    public Map<MoveType, Cell> makePlay(int col) {
+        Map<MoveType, Cell> res = new HashMap<>();
         if (board.setPosition(col, activePlayerIndex)) {
             Cell actual_move = board.getLastSettledCell();
-            res.add(actual_move);
+            res.put(MoveType.NEW_MOVE, actual_move);
             if (!moves.empty())
-                res.add(moves.peek());
+                res.put(MoveType.LAST_MOVE, moves.peek());
             moves.push(actual_move);
             winStatus = winner();
             if (winStatus == WinStatus.NONE)
                 passTurn();
-            else
-                gameEnded = true;
         }
         return res;
     }
@@ -88,7 +82,6 @@ public class Game {
     public void restart() {
         board.reset();
         moves = new Stack<>();
-        gameEnded = false;
         winStatus = WinStatus.NONE;
     }
 
@@ -106,16 +99,16 @@ public class Game {
         return board.getWinCells();
     }
 
-    public List<Cell> undoLastMove() {
-        List<Cell> res = new ArrayList<>();
+    public Map<MoveType, Cell> undoLastMove() {
+        Map<MoveType, Cell> res = new HashMap<>();
         if (moves.isEmpty())
             return res;
         Cell last_move = moves.pop();
         board.clearPosition(last_move.getRow(), last_move.getCol());
         retreatTurn();
-        res.add(last_move);
+        res.put(MoveType.CLEAR_MOVE, last_move);
         if (!moves.isEmpty())
-            res.add(moves.peek());
+            res.put(MoveType.LAST_MOVE, moves.peek());
         return res;
     }
 }

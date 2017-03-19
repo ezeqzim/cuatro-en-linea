@@ -11,12 +11,13 @@ import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Cell;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Game;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.MoveType;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.WinStatus;
-import com.example.ezeqzim.cuatro_en_linea.BackEnd.Player.*;
-import com.example.ezeqzim.cuatro_en_linea.BackEnd.Statistics.*;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Player.Player;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Player.PlayerProfile;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Statistics.Statistic;
 import com.example.ezeqzim.cuatro_en_linea.FrontEnd.Buttons.ButtonCoordinates;
 import com.example.ezeqzim.cuatro_en_linea.R;
 
@@ -25,15 +26,14 @@ import java.util.Map;
 
 public class GameActivity extends AppCompatActivity {
     private Game game;
-    private Player activePlayer;
     private LinearLayout BOARD;
-    private final static int MARGIN = 1;
     private int BTN_MAX;
-    private final int btn_circle_red_border = R.drawable.button_circle_red_border;
-    private final int btn_circle_black_border = R.drawable.button_circle_black_border;
-    private final int btn_black_border = R.drawable.button_black_border;
-    private final int layer_circle_red_border = R.id.circle_red_border;
-    private final int layer_circle_black_border = R.id.circle_black_border;
+    private final static int MARGIN = 1;
+    private final int BTN_CIRCLE_RED_BORDER = R.drawable.button_circle_red_border;
+    private final int BTN_CIRCLE_BLACK_BORDER = R.drawable.button_circle_black_border;
+    private final int BTN_BLACK_BORDER = R.drawable.button_black_border;
+    private final int LAYER_CIRCLE_RED_BORDER = R.id.circle_red_border;
+    private final int LAYER_CIRCLE_BLACK_BORDER = R.id.circle_black_border;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,16 +52,9 @@ public class GameActivity extends AppCompatActivity {
                 (int[]) play.getBundleExtra("bundle").getSerializable("colors")
         );
         BTN_MAX = getWidthMax();
-        activePlayer = game.getActivePlayer();
         setTurnTextView();
         setResultTextView();
         getAndSetBoard();
-    }
-
-    private int getWidthMax() {
-        Point size = new Point();
-        getWindowManager().getDefaultDisplay().getSize(size);
-        return size.x / (game.getCols() + 1);
     }
 
     private void getAndSetBoard() {
@@ -98,23 +91,25 @@ public class GameActivity extends AppCompatActivity {
                 makePlay(btn.getCol());
             }
         });
-        btn.setBackground(btn_black_border);
+        btn.setBackground(BTN_BLACK_BORDER);
         return btn;
     }
 
     private void makePlay(int col) {
         if (!game.isEnded()) {
-            List<Cell> play = game.makePlay(col);
+            Player activePlayer = game.getActivePlayer();
+            Player lastTurnPlayer = game.getLastTurnPlayer();
+            Map<MoveType, Cell> play = game.makePlay(col);
             WinStatus status = game.getWinStatus();
             if (play.size() == 0)
                 Toast.makeText(this, R.string.full_column, Toast.LENGTH_SHORT).show();
             else {
-                if (play.size() == 2) {
-                    setShapeStrokeColor(btn_circle_black_border, layer_circle_black_border, game.getLastTurnPlayer().getColor());
-                    getButtonCoordinates(play.get(1).getRow(), play.get(1).getCol()).setBackground(btn_circle_black_border);
+                if (play.containsKey(MoveType.LAST_MOVE)) {
+                    setShapeStrokeColor(BTN_CIRCLE_BLACK_BORDER, LAYER_CIRCLE_BLACK_BORDER, lastTurnPlayer.getColor());
+                    getButtonCoordinates(play.get(MoveType.LAST_MOVE).getRow(), play.get(MoveType.LAST_MOVE).getCol()).setBackground(BTN_CIRCLE_BLACK_BORDER);
                 }
-                setShapeStrokeColor(btn_circle_red_border, layer_circle_red_border, game.getActivePlayer().getColor());
-                getButtonCoordinates(play.get(0).getRow(), play.get(0).getCol()).setBackground(btn_circle_red_border);
+                setShapeStrokeColor(BTN_CIRCLE_RED_BORDER, LAYER_CIRCLE_RED_BORDER, activePlayer.getColor());
+                getButtonCoordinates(play.get(MoveType.NEW_MOVE).getRow(), play.get(MoveType.NEW_MOVE).getCol()).setBackground(BTN_CIRCLE_RED_BORDER);
                 if (status == WinStatus.DRAW)
                     Toast.makeText(this, R.string.draw, Toast.LENGTH_SHORT).show();
                 else if (status == WinStatus.WIN) {
@@ -122,7 +117,6 @@ public class GameActivity extends AppCompatActivity {
                     Toast.makeText(this, whoseWinString(), Toast.LENGTH_SHORT).show();
                     setResultTextView();
                 }
-                activePlayer = game.getActivePlayer();
                 setTurnTextView();
             }
         }
@@ -131,9 +125,8 @@ public class GameActivity extends AppCompatActivity {
     private void markWin() {
         List<Cell> places = game.getWinCells();
         for (Cell place : places) {
-            //TODO: Check player to highlight
-            setShapeStrokeColor(btn_circle_red_border, layer_circle_red_border, game.getLastTurnPlayer().getColor());
-            getButtonCoordinates(place.getRow(), place.getCol()).setBackground(btn_circle_red_border);
+            setShapeStrokeColor(BTN_CIRCLE_RED_BORDER, LAYER_CIRCLE_RED_BORDER, game.getActivePlayer().getColor());
+            getButtonCoordinates(place.getRow(), place.getCol()).setBackground(BTN_CIRCLE_RED_BORDER);
         }
     }
 
@@ -148,15 +141,15 @@ public class GameActivity extends AppCompatActivity {
 
     public void undoLastMove(View view) {
         if (!game.isEnded()) {
-            List<Cell> undo = game.undoLastMove();
-            activePlayer = game.getActivePlayer();
+            Player lastTurnPlayer = game.getLastTurnPlayer();
+            Map<MoveType, Cell> undo = game.undoLastMove();
             if (undo.size() == 0)
                 Toast.makeText(this, R.string.no_more_mistakes, Toast.LENGTH_SHORT).show();
             else {
-                getButtonCoordinates(undo.get(0).getRow(), undo.get(0).getCol()).setBackground(btn_black_border);
+                getButtonCoordinates(undo.get(MoveType.CLEAR_MOVE).getRow(), undo.get(MoveType.CLEAR_MOVE).getCol()).setBackground(BTN_BLACK_BORDER);
                 if (undo.size() == 2) {
-                    setShapeStrokeColor(btn_circle_red_border, layer_circle_red_border, game.getActivePlayer().getColor());
-                    getButtonCoordinates(undo.get(1).getRow(), undo.get(1).getCol()).setBackground(btn_circle_red_border);
+                    setShapeStrokeColor(BTN_CIRCLE_RED_BORDER, LAYER_CIRCLE_RED_BORDER, lastTurnPlayer.getColor());
+                    getButtonCoordinates(undo.get(MoveType.LAST_MOVE).getRow(), undo.get(MoveType.LAST_MOVE).getCol()).setBackground(BTN_CIRCLE_RED_BORDER);
                 }
                 setTurnTextView();
             }
@@ -182,6 +175,12 @@ public class GameActivity extends AppCompatActivity {
         ((GradientDrawable) ((LayerDrawable) getResources().getDrawable(drawable)).findDrawableByLayerId(layerId)).setStroke(6, color);
     }
 
+    private int getWidthMax() {
+        Point size = new Point();
+        getWindowManager().getDefaultDisplay().getSize(size);
+        return size.x / (game.getCols() + 1);
+    }
+
     private void setTurnTextView() {
         TextView tv = (TextView) findViewById(R.id.isPlaying);
         tv.setText(whosePlayingString());
@@ -197,10 +196,12 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private String whosePlayingString(){
+        Player activePlayer = game.getActivePlayer();
         return playerNamePlusString(activePlayer, "is playing");
     }
 
     private String whoseWinString(){
+        Player activePlayer = game.getActivePlayer();
         return playerNamePlusString(activePlayer, "wins");
     }
 }
