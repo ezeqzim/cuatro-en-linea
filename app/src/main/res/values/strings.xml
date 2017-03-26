@@ -16,4 +16,5 @@
     <string name="player_profile">Profiles Menu</string>
     <string name="player_name">Player</string>
     <string name="go_to_profiles">See Profiles</string>
+    <string name="last_winner">Last Winner:</string>
 </resources>

@@ -1,5 +1,6 @@
 package com.example.ezeqzim.cuatro_en_linea.Activities;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.Point;
@@ -13,6 +14,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Cell;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Game;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Modes.BestOf;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Modes.GameMode;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Modes.JustPlay;
+import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.Modes.Tournament;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.MoveType;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Game.WinStatus;
 import com.example.ezeqzim.cuatro_en_linea.BackEnd.Player.Player;
@@ -26,6 +31,7 @@ import java.util.Map;
 
 public class GameActivity extends AppCompatActivity {
     private Game game;
+    private GameMode gameMode;
     private LinearLayout BOARD;
     private int BTN_MAX;
     private final static int MARGIN = 1;
@@ -43,18 +49,39 @@ public class GameActivity extends AppCompatActivity {
         initialize(play);
     }
 
-    @SuppressWarnings("unchecked")
     private void initialize(Intent play) {
-        game = new Game(
-                play.getIntExtra("rows", 7),
-                play.getIntExtra("cols", 7),
-                (List<PlayerProfile>) play.getBundleExtra("bundle").getSerializable("playerProfiles"),
-                (int[]) play.getBundleExtra("bundle").getSerializable("colors")
-        );
+        game = createGame(play);
+        gameMode = createGameMode(play);
         BTN_MAX = getWidthMax();
         setTurnTextView();
         setResultTextView();
         getAndSetBoard();
+    }
+
+    private GameMode createGameMode(Intent gameMode) {
+        switch (gameMode.getStringExtra("gameMode")) {
+            case "bestOf":
+                return new BestOf(
+                        gameMode.getIntExtra("bestOf", 7),
+                        game.getPlayers()
+                );
+            case "tournament":
+                return new Tournament(
+                        game.getPlayers()
+                );
+            default:
+                return new JustPlay();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private Game createGame(Intent game) {
+        return new Game(
+                game.getIntExtra("rows", 7),
+                game.getIntExtra("cols", 7),
+                (List<PlayerProfile>) game.getBundleExtra("bundle").getSerializable("playerProfiles"),
+                (int[]) game.getBundleExtra("bundle").getSerializable("colors")
+        );
     }
 
     private void getAndSetBoard() {
@@ -116,6 +143,13 @@ public class GameActivity extends AppCompatActivity {
                     markWin();
                     Toast.makeText(this, whoseWinString(), Toast.LENGTH_SHORT).show();
                     setResultTextView();
+                    WinStatus winStatusGameMode = gameMode.informWinEvent(activePlayer);
+                    if (winStatusGameMode == WinStatus.WIN) {
+                        Intent returnIntent = new Intent();
+                        returnIntent.putExtra("winPlayer", activePlayer.getPlayerProfile());
+                        setResult(Activity.RESULT_OK, returnIntent);
+                        finish();
+                    }
                 }
                 setTurnTextView();
             }
@@ -141,8 +175,8 @@ public class GameActivity extends AppCompatActivity {
 
     public void undoLastMove(View view) {
         if (!game.isEnded()) {
-            Player lastTurnPlayer = game.getLastTurnPlayer();
             Map<MoveType, Cell> undo = game.undoLastMove();
+            Player lastTurnPlayer = game.getLastTurnPlayer();
             if (undo.size() == 0)
                 Toast.makeText(this, R.string.no_more_mistakes, Toast.LENGTH_SHORT).show();
             else {

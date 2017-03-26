@@ -23,7 +23,7 @@ public class ProfileActivity extends AppCompatActivity {
         PlayerProfile pp = new PlayerProfile(s_playerName);
         long id = PlayerProfileSQLDatabaseHelper.getInstance(getApplicationContext()).upsert(pp);
         Intent returnIntent = new Intent();
-        returnIntent.putExtra("playerProlfileId", id);
+        returnIntent.putExtra("playerProfileId", id);
         setResult(Activity.RESULT_OK, returnIntent);
         finish();
     }
